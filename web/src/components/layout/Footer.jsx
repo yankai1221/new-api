@@ -108,26 +108,11 @@ const FooterBar = () => {
           </div>
         )}
 
-        <div className='flex flex-col md:flex-row items-center justify-between w-full max-w-[1110px] gap-6'>
-          <div className='flex flex-wrap items-center gap-2'>
-            <Typography.Text className='text-sm !text-semi-color-text-1'>
-              © {currentYear} {systemName}. {t('版权所有')}
-            </Typography.Text>
-          </div>
-
-          <div className='text-sm'>
-            <span className='!text-semi-color-text-1'>
-              {t('设计与开发由')}{' '}
-            </span>
-            <a
-              href='https://zhumuai.com'
-              target='_blank'
-              rel='noopener noreferrer'
-              className='!text-semi-color-primary font-medium'
-            >
-              瞩目AI
-            </a>
-          </div>
+        {/* 这里是修改后的底部版权部分：删除了右侧链接，并强制居中 */}
+        <div className='flex flex-col items-center justify-center w-full max-w-[1110px] mt-8'>
+          <Typography.Text className='text-sm !text-semi-color-text-1 text-center'>
+            © {currentYear} {systemName}. {t('版权所有')}
+          </Typography.Text>
         </div>
       </footer>
     ),
