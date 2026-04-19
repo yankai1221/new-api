@@ -397,7 +397,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true
     },
-    title: 'New API',
+    title: '瞩目AI',
     icon: path.join(__dirname, 'icon.png')
   });
 
@@ -436,7 +436,7 @@ function createTray() {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Show New API',
+      label: '显示瞩目AI',
       click: () => {
         if (mainWindow === null) {
           createWindow();
@@ -458,7 +458,7 @@ function createTray() {
     }
   ]);
 
-  tray.setToolTip('New API');
+  tray.setToolTip('瞩目AI');
   tray.setContextMenu(contextMenu);
 
   // On macOS, clicking the tray icon shows the window

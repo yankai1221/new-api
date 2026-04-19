@@ -1,7 +1,7 @@
 {
   "name": "new-api-electron",
   "version": "1.0.0",
-  "description": "New API - AI Model Gateway Desktop Application",
+  "description": "瞩目AI - 全能的大模型接口网关",
   "main": "main.js",
   "scripts": {
     "start-app": "electron .",
