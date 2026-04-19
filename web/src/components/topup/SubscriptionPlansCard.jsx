@@ -29,6 +29,7 @@ import {
   Tag,
   Tooltip,
   Typography,
+  Tag,  // <--- 就在这里加上这一行！
 } from '@douyinfe/semi-ui';
 import { API, showError, showSuccess, renderQuota } from '../../helpers';
 import { getCurrencyConfig } from '../../helpers/render';
