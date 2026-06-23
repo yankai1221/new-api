@@ -36,6 +36,8 @@ RUN go mod download
 COPY . .
 COPY --from=builder /build/web/default/dist ./web/default/dist
 #COPY --from=builder-classic /build/web/classic/dist ./web/classic/dist
+# 【新增这一行：创建一个假的空目录和文件，骗过 go:embed 编译器】
+RUN mkdir -p web/classic/dist && echo "bypass" > web/classic/dist/index.html
 RUN go build -ldflags "-s -w -X 'github.com/QuantumNous/new-api/common.Version=$(cat VERSION)'" -o new-api
 
 FROM debian:bookworm-slim@sha256:f06537653ac770703bc45b4b113475bd402f451e85223f0f2837acbf89ab020a
