@@ -1,6 +1,7 @@
 package openaicompat
 
 import (
+	"encoding/json" // <-- 新增这一行
 	"errors"
 	"strings"
 
@@ -55,14 +56,26 @@ func ResponsesResponseToChatCompletionsResponse(resp *dto.OpenAIResponsesRespons
 			if callId == "" {
 				callId = strings.TrimSpace(out.ID)
 			}
-			toolCalls = append(toolCalls, dto.ToolCallResponse{
-				ID:   callId,
-				Type: "function",
-				Function: dto.FunctionResponse{
-					Name:      name,
-					Arguments: out.Arguments,
-				},
-			})
+			// --- 新增的安全类型转换逻辑 ---
+            var argsStr string
+            switch v := out.Arguments.(type) {
+            case string:
+                argsStr = v
+            default:
+                // 如果上游发来的是对象结构，将其序列化为标准的 JSON 字符串
+                bytes, _ := json.Marshal(v)
+                argsStr = string(bytes)
+            }
+            // ------------------------------
+
+            toolCalls = append(toolCalls, dto.ToolCallResponse{
+                ID:   callId,
+                Type: "function",
+                Function: dto.FunctionResponse{
+                    Name:      name,
+                    Arguments: argsStr, // <-- 填入我们安全转换好的字符串
+                },
+            })
 		}
 	}
 
