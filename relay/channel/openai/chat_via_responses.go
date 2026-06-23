@@ -1,6 +1,7 @@
 package openai
 
 import (
+	"encoding/json" // <--- 把这一行加在这里！注意带双引号
 	"fmt"
 	"io"
 	"net/http"
@@ -408,7 +409,18 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 				toolCallNameByID[callID] = name
 			}
 
-			newArgs := streamResp.Item.Arguments
+			// --- 安全转换 Arguments 为字符串 ---
+            var newArgs string
+            if streamResp.Item.Arguments != nil {
+                switch v := streamResp.Item.Arguments.(type) {
+                case string:
+                    newArgs = v
+                default:
+                    bytes, _ := json.Marshal(v)
+                    newArgs = string(bytes)
+                }
+            }
+            // -----------------------------------
 			prevArgs := toolCallArgsByID[callID]
 			argsDelta := ""
 			if newArgs != "" {
