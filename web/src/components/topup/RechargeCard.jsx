@@ -44,6 +44,8 @@ import {
   TrendingUp,
   Receipt,
   Sparkles,
+  ShoppingBag,
+  ExternalLink,
 } from 'lucide-react';
 import { IconGift } from '@douyinfe/semi-icons';
 import { useMinimumLoadingTime } from '../../hooks/common/useMinimumLoadingTime';
@@ -51,6 +53,8 @@ import { getCurrencyConfig } from '../../helpers/render';
 import SubscriptionPlansCard from './SubscriptionPlansCard';
 
 const { Text } = Typography;
+
+const REDEMPTION_SHOP_URL = 'https://pay.ldxp.cn/shop/Z7VYZN0E';
 
 const RechargeCard = ({
   t,
@@ -616,6 +620,71 @@ const RechargeCard = ({
             }
           />
         </Form>
+      </Card>
+
+      {/* 购买兑换码商城 */}
+      <Card
+        className='!rounded-xl w-full !border-0'
+        style={{
+          background:
+            'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%)',
+          boxShadow: '0 4px 16px rgba(139, 92, 246, 0.35)',
+        }}
+        bodyStyle={{ padding: '20px' }}
+      >
+        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+          <div className='flex items-start gap-3'>
+            <div
+              className='flex items-center justify-center rounded-full shrink-0'
+              style={{
+                width: 44,
+                height: 44,
+                background: 'rgba(255,255,255,0.2)',
+              }}
+            >
+              <ShoppingBag size={22} color='white' />
+            </div>
+            <div>
+              <div className='flex items-center gap-2 mb-1'>
+                <Text strong style={{ color: 'white', fontSize: '16px' }}>
+                  {t('购买兑换码')}
+                </Text>
+                <Tag
+                  size='small'
+                  style={{
+                    background: 'rgba(255,255,255,0.25)',
+                    color: 'white',
+                    border: 'none',
+                  }}
+                >
+                  {t('官方商城')}
+                </Tag>
+              </div>
+              <Text
+                style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px' }}
+              >
+                {t(
+                  '前往商城购买兑换码，购买成功后复制兑换码，回到本页面粘贴到上方“兑换码充值”输入框即可完成充值。',
+                )}
+              </Text>
+            </div>
+          </div>
+          <Button
+            theme='solid'
+            size='large'
+            icon={<ExternalLink size={16} />}
+            onClick={() =>
+              window.open(REDEMPTION_SHOP_URL, '_blank', 'noopener,noreferrer')
+            }
+            className='!rounded-lg shrink-0 font-semibold'
+            style={{
+              background: 'white',
+              color: '#7c3aed',
+            }}
+          >
+            {t('前往购买')}
+          </Button>
+        </div>
       </Card>
     </Space>
   );
