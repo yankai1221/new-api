@@ -1,5 +1,7 @@
 {
   "translation": {
+    "管理员请前往「代理管理」进行代理审核与划拨。": "Admins should go to \"Agent Management\" for agent review and allocation.",
+    "前往代理管理": "Go to Agent Management",
     "下载 txt": "Download txt",
     "代理实付，可空": "Amount paid by agent (optional)",
     "代理审核与划拨": "Agent review and allocation",

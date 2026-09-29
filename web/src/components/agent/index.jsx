@@ -28,8 +28,9 @@ import {
   Spin,
   Typography,
 } from '@douyinfe/semi-ui';
+import { useNavigate } from 'react-router-dom';
 import { Store } from 'lucide-react';
-import { API, showError, showSuccess } from '../../helpers';
+import { API, isAdmin, showError, showSuccess } from '../../helpers';
 import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
 import AgentDashboard from './AgentDashboard';
@@ -44,6 +45,7 @@ const STATUS_DISABLED = 4;
 
 const AgentCenter = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [, userDispatch] = useContext(UserContext);
   const [statusState] = useContext(StatusContext);
 
@@ -123,11 +125,57 @@ const AgentCenter = () => {
     </div>
   );
 
+  // 统一的状态横幅：标题独占一行，描述在下一行并留出间距
+  const renderStatusBanner = (type, title, desc) => (
+    <Banner
+      type={type}
+      closeIcon={null}
+      description={
+        <div>
+          <div className='font-medium text-sm'>{title}</div>
+          <div
+            className='text-sm mt-2'
+            style={{ color: 'var(--semi-color-text-1)' }}
+          >
+            {desc}
+          </div>
+        </div>
+      }
+    />
+  );
+
   if (loading) {
     return pageWrap(
       <div className='py-20 flex justify-center'>
         <Spin size='large' />
       </div>,
+    );
+  }
+
+  // 管理员不使用代理中心：提示前往代理管理
+  if (isAdmin()) {
+    return pageWrap(
+      <Card className='!rounded-2xl shadow-sm border-0'>
+        <div className='flex items-center mb-4'>
+          <Avatar size='small' color='violet' className='mr-3 shadow-md'>
+            <Store size={16} />
+          </Avatar>
+          <Text className='text-lg font-medium'>{t('代理中心')}</Text>
+        </div>
+        <Banner
+          type='info'
+          closeIcon={null}
+          description={t('管理员请前往「代理管理」进行代理审核与划拨。')}
+        />
+        <Button
+          type='primary'
+          theme='solid'
+          className='!mt-4'
+          onClick={() => navigate('/console/agentmanage')}
+        >
+          {t('前往代理管理')}
+        </Button>
+      </Card>,
     );
   }
 
@@ -219,12 +267,11 @@ const AgentCenter = () => {
     return pageWrap(
       <Card className='!rounded-2xl shadow-sm border-0'>
         {header}
-        <Banner
-          type='warning'
-          closeIcon={null}
-          title={t('申请审核中')}
-          description={t('您的代理申请正在审核中，请耐心等待管理员处理。')}
-        />
+        {renderStatusBanner(
+          'warning',
+          t('申请审核中'),
+          t('您的代理申请正在审核中，请耐心等待管理员处理。'),
+        )}
       </Card>,
     );
   }
@@ -237,18 +284,13 @@ const AgentCenter = () => {
     return pageWrap(
       <Card className='!rounded-2xl shadow-sm border-0'>
         {header}
-        <Banner
-          type='danger'
-          closeIcon={null}
-          title={t('申请被拒绝')}
-          description={
-            <div>
-              {agent.reject_reason
-                ? t('拒绝理由：') + agent.reject_reason
-                : t('很抱歉，您的申请未通过。')}
-            </div>
-          }
-        />
+        {renderStatusBanner(
+          'danger',
+          t('申请被拒绝'),
+          agent.reject_reason
+            ? t('拒绝理由：') + agent.reject_reason
+            : t('很抱歉，您的申请未通过。'),
+        )}
         {applyEnabled && (
           <Button
             type='primary'
@@ -268,12 +310,11 @@ const AgentCenter = () => {
     return pageWrap(
       <Card className='!rounded-2xl shadow-sm border-0'>
         {header}
-        <Banner
-          type='danger'
-          closeIcon={null}
-          title={t('代理资格已被禁用')}
-          description={t('您的代理资格已被管理员禁用，如有疑问请联系管理员。')}
-        />
+        {renderStatusBanner(
+          'danger',
+          t('代理资格已被禁用'),
+          t('您的代理资格已被管理员禁用，如有疑问请联系管理员。'),
+        )}
       </Card>,
     );
   }

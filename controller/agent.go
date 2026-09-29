@@ -131,6 +131,11 @@ type agentApplyRequest struct {
 
 // ApplyForAgent 提交或重新提交代理申请
 func ApplyForAgent(c *gin.Context) {
+	// 管理员不使用代理中心，请前往代理管理
+	if c.GetInt("role") >= common.RoleAdminUser {
+		common.ApiErrorMsg(c, "管理员无需申请代理，请前往「代理管理」")
+		return
+	}
 	if !common.AgentApplyEnabled {
 		common.ApiErrorMsg(c, "代理申请暂未开放")
 		return

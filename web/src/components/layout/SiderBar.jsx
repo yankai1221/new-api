@@ -135,6 +135,8 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         text: t('代理中心'),
         itemKey: 'agent',
         to: '/agent',
+        // 管理员不使用代理中心（前往代理管理），仅普通用户可见
+        className: !isAdmin() ? '' : 'tableHiddle',
       },
       {
         text: t('个人设置'),
@@ -150,7 +152,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     });
 
     return filteredItems;
-  }, [t, isModuleVisible]);
+  }, [isAdmin(), t, isModuleVisible]);
 
   const adminItems = useMemo(() => {
     const items = [
