@@ -1,5 +1,7 @@
 {
   "translation": {
+    "系统尚未配置「服务器地址」，暂无法生成推广链接，请联系管理员在系统设置中填写服务器地址。": "The server address is not configured yet, so the promotion link cannot be generated. Please ask the admin to set the server address in system settings.",
+    "系统尚未配置「服务器地址」，暂无法生成推广链接，请先在系统设置中填写服务器地址。": "The server address is not configured yet, so the promotion link cannot be generated. Please set the server address in system settings first.",
     "管理员请前往「代理管理」进行代理审核与划拨。": "Admins should go to \"Agent Management\" for agent review and allocation.",
     "前往代理管理": "Go to Agent Management",
     "下载 txt": "Download txt",

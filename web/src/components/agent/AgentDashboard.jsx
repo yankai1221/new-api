@@ -308,22 +308,31 @@ const AgentDashboard = ({ t, onChanged }) => {
 
           {/* 推广链接 */}
           <Card className='!rounded-xl w-full' title={t('专属推广链接')}>
-            <div className='flex flex-col sm:flex-row gap-2 sm:items-center'>
-              <Input
-                readOnly
-                value={self?.promotion_link || ''}
-                prefix={<Store size={16} />}
-                className='flex-1'
+            {self?.promotion_link ? (
+              <div className='flex flex-col sm:flex-row gap-2 sm:items-center'>
+                <Input
+                  readOnly
+                  value={self.promotion_link}
+                  prefix={<Store size={16} />}
+                  className='flex-1'
+                />
+                <Button
+                  icon={<Copy size={16} />}
+                  theme='solid'
+                  onClick={() => doCopy(self.promotion_link)}
+                >
+                  {t('复制链接')}
+                </Button>
+              </div>
+            ) : (
+              <Banner
+                type='warning'
+                closeIcon={null}
+                description={t(
+                  '系统尚未配置「服务器地址」，暂无法生成推广链接，请联系管理员在系统设置中填写服务器地址。',
+                )}
               />
-              <Button
-                icon={<Copy size={16} />}
-                theme='solid'
-                onClick={() => doCopy(self?.promotion_link)}
-                disabled={!self?.promotion_link}
-              >
-                {t('复制链接')}
-              </Button>
-            </div>
+            )}
             <Text type='tertiary' className='text-xs'>
               {t('代理码：')}
               {self?.agent_code || '-'}

@@ -17,8 +17,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
+import { StatusContext } from '../../context/Status';
 import {
+  Banner,
   Button,
   Card,
   DatePicker,
@@ -92,6 +94,7 @@ const AgentDetailDrawer = ({
   approvedAgents,
   t,
 }) => {
+  const [statusState] = useContext(StatusContext);
   const [tab, setTab] = useState('info');
 
   // 基本信息
@@ -440,9 +443,15 @@ const AgentDetailDrawer = ({
 
   if (!agent) return null;
 
-  const promotionLink = agent.agent_code
-    ? `${window.location.origin}/register?agent=${agent.agent_code}`
-    : '';
+  // 推广链接域名必须使用系统设置中的「服务器地址」，不依赖请求 Host / localhost
+  const serverAddress = (statusState?.status?.server_address || '').replace(
+    /\/+$/,
+    '',
+  );
+  const promotionLink =
+    agent.agent_code && serverAddress
+      ? `${serverAddress}/register?agent=${agent.agent_code}`
+      : '';
 
   const infoTab = (
     <div className='py-2'>
@@ -464,7 +473,7 @@ const AgentDetailDrawer = ({
             {t('联系方式')}：{agent.contact || '-'}
           </div>
         </div>
-        {promotionLink && (
+        {promotionLink ? (
           <div className='flex gap-2 mt-3 items-center'>
             <Input readOnly value={promotionLink} className='flex-1' />
             <Button
@@ -478,6 +487,17 @@ const AgentDetailDrawer = ({
               {t('复制链接')}
             </Button>
           </div>
+        ) : (
+          agent.agent_code && (
+            <Banner
+              type='warning'
+              closeIcon={null}
+              className='!mt-3'
+              description={t(
+                '系统尚未配置「服务器地址」，暂无法生成推广链接，请先在系统设置中填写服务器地址。',
+              )}
+            />
+          )
         )}
       </Card>
       <Card className='!rounded-xl'>
