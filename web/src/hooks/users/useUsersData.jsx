@@ -17,8 +17,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Modal, Select } from '@douyinfe/semi-ui';
 import { API, showError, showSuccess } from '../../helpers';
 import { ITEMS_PER_PAGE } from '../../constants';
 import { useTableCompactMode } from '../common/useTableCompactMode';
@@ -35,6 +36,7 @@ export const useUsersData = () => {
   const [searching, setSearching] = useState(false);
   const [groupOptions, setGroupOptions] = useState([]);
   const [userCount, setUserCount] = useState(0);
+  const [agentOptions, setAgentOptions] = useState([]);
 
   // Modal states
   const [showAddUser, setShowAddUser] = useState(false);
@@ -47,6 +49,7 @@ export const useUsersData = () => {
   const formInitValues = {
     searchKeyword: '',
     searchGroup: '',
+    searchAgentId: '',
   };
 
   // Form API reference
@@ -58,7 +61,17 @@ export const useUsersData = () => {
     return {
       searchKeyword: formValues.searchKeyword || '',
       searchGroup: formValues.searchGroup || '',
+      searchAgentId:
+        formValues.searchAgentId === undefined ? '' : formValues.searchAgentId,
     };
+  };
+
+  // 代理筛选查询串：'' 不过滤；'0' 无归属；具体代理 user_id
+  const agentIdQuery = () => {
+    const { searchAgentId } = getFormValues();
+    return searchAgentId === '' || searchAgentId === null
+      ? ''
+      : `&agent_id=${searchAgentId}`;
   };
 
   // Set user format with key field
@@ -72,7 +85,9 @@ export const useUsersData = () => {
   // Load users data
   const loadUsers = async (startIdx, pageSize) => {
     setLoading(true);
-    const res = await API.get(`/api/user/?p=${startIdx}&page_size=${pageSize}`);
+    const res = await API.get(
+      `/api/user/?p=${startIdx}&page_size=${pageSize}${agentIdQuery()}`,
+    );
     const { success, message, data } = res.data;
     if (success) {
       const newPageData = data.items;
@@ -100,13 +115,13 @@ export const useUsersData = () => {
     }
 
     if (searchKeyword === '' && searchGroup === '') {
-      // If keyword is blank, load files instead
+      // 无关键字/分组时走列表接口（仍会带上代理筛选）
       await loadUsers(startIdx, pageSize);
       return;
     }
     setSearching(true);
     const res = await API.get(
-      `/api/user/search?keyword=${searchKeyword}&group=${searchGroup}&p=${startIdx}&page_size=${pageSize}`,
+      `/api/user/search?keyword=${searchKeyword}&group=${searchGroup}&p=${startIdx}&page_size=${pageSize}${agentIdQuery()}`,
     );
     const { success, message, data } = res.data;
     if (success) {
@@ -252,6 +267,60 @@ export const useUsersData = () => {
     }
   };
 
+  // 拉取「已通过」代理，用于筛选与改归属下拉
+  const fetchApprovedAgents = async () => {
+    try {
+      const res = await API.get('/api/admin/agents?status=2&p=1&page_size=100');
+      if (res?.data?.success) {
+        setAgentOptions(
+          (res.data.data.items || []).map((a) => ({
+            label: a.username,
+            value: a.user_id,
+          })),
+        );
+      }
+    } catch (error) {
+      // 忽略（可能无权限）
+    }
+  };
+
+  // 修改用户归属代理
+  const reassignAgent = (user) => {
+    if (!user) return;
+    let target = user.agent_id || 0;
+    Modal.confirm({
+      title: t('修改归属代理') + ' - ' + user.username,
+      content: (
+        <div className='mt-2'>
+          <Select
+            defaultValue={target}
+            style={{ width: '100%' }}
+            onChange={(v) => (target = v)}
+            optionList={[
+              { label: t('无归属'), value: 0 },
+              ...agentOptions,
+            ]}
+          />
+        </div>
+      ),
+      onOk: async () => {
+        try {
+          const res = await API.put(`/api/admin/users/${user.id}/agent`, {
+            agent_id: target,
+          });
+          if (res.data.success) {
+            showSuccess(t('修改成功'));
+            await refresh();
+          } else {
+            showError(res.data.message);
+          }
+        } catch (e) {
+          showError(e.message);
+        }
+      },
+    });
+  };
+
   // Modal control functions
   const closeAddUser = () => {
     setShowAddUser(false);
@@ -272,6 +341,7 @@ export const useUsersData = () => {
         showError(reason);
       });
     fetchGroups().then();
+    fetchApprovedAgents().then();
   }, []);
 
   return {
@@ -283,6 +353,7 @@ export const useUsersData = () => {
     userCount,
     searching,
     groupOptions,
+    agentOptions,
 
     // Modal state
     showAddUser,
@@ -307,6 +378,7 @@ export const useUsersData = () => {
     manageUser,
     resetUserPasskey,
     resetUserTwoFA,
+    reassignAgent,
     handlePageChange,
     handlePageSizeChange,
     handleRow,

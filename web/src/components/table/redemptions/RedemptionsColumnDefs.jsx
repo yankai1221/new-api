@@ -139,6 +139,18 @@ export const getRedemptionsColumns = ({
       },
     },
     {
+      title: t('归属代理'),
+      dataIndex: 'agent_username',
+      render: (text, record) =>
+        record.agent_id && text ? (
+          <Tag color='violet' shape='circle'>
+            {text}
+          </Tag>
+        ) : (
+          '-'
+        ),
+    },
+    {
       title: '',
       dataIndex: 'operate',
       fixed: 'right',

@@ -52,9 +52,12 @@ export const useRedemptionsData = () => {
   // UI state
   const [compactMode, setCompactMode] = useTableCompactMode('redemptions');
 
+  const [agentOptions, setAgentOptions] = useState([]);
+
   // Form state
   const formInitValues = {
     searchKeyword: '',
+    searchAgentId: '',
   };
 
   // Get form values
@@ -62,7 +65,17 @@ export const useRedemptionsData = () => {
     const formValues = formApi ? formApi.getValues() : {};
     return {
       searchKeyword: formValues.searchKeyword || '',
+      searchAgentId:
+        formValues.searchAgentId === undefined ? '' : formValues.searchAgentId,
     };
+  };
+
+  // 代理筛选查询串
+  const agentIdQuery = () => {
+    const { searchAgentId } = getFormValues();
+    return searchAgentId === '' || searchAgentId === null
+      ? ''
+      : `&agent_id=${searchAgentId}`;
   };
 
   // Set redemption data format
@@ -75,7 +88,7 @@ export const useRedemptionsData = () => {
     setLoading(true);
     try {
       const res = await API.get(
-        `/api/redemption/?p=${page}&page_size=${pageSize}`,
+        `/api/redemption/?p=${page}&page_size=${pageSize}${agentIdQuery()}`,
       );
       const { success, message, data } = res.data;
       if (success) {
@@ -103,7 +116,7 @@ export const useRedemptionsData = () => {
     setSearching(true);
     try {
       const res = await API.get(
-        `/api/redemption/search?keyword=${searchKeyword}&p=1&page_size=${pageSize}`,
+        `/api/redemption/search?keyword=${searchKeyword}&p=1&page_size=${pageSize}${agentIdQuery()}`,
       );
       const { success, message, data } = res.data;
       if (success) {
@@ -294,6 +307,23 @@ export const useRedemptionsData = () => {
     }
   };
 
+  // 拉取「已通过」代理用于筛选
+  const fetchApprovedAgents = async () => {
+    try {
+      const res = await API.get('/api/admin/agents?status=2&p=1&page_size=100');
+      if (res?.data?.success) {
+        setAgentOptions(
+          (res.data.data.items || []).map((a) => ({
+            label: a.username,
+            value: a.user_id,
+          })),
+        );
+      }
+    } catch (error) {
+      // 忽略
+    }
+  };
+
   // Initialize data loading
   useEffect(() => {
     loadRedemptions(1, pageSize)
@@ -302,6 +332,10 @@ export const useRedemptionsData = () => {
         showError(reason);
       });
   }, [pageSize]);
+
+  useEffect(() => {
+    fetchApprovedAgents();
+  }, []);
 
   return {
     // Data state
@@ -320,6 +354,7 @@ export const useRedemptionsData = () => {
     // Form state
     formApi,
     formInitValues,
+    agentOptions,
 
     // UI state
     compactMode,

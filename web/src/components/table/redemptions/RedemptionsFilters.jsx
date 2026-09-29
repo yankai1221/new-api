@@ -25,6 +25,7 @@ const RedemptionsFilters = ({
   formInitValues,
   setFormApi,
   searchRedemptions,
+  agentOptions = [],
   loading,
   searching,
   t,
@@ -61,6 +62,26 @@ const RedemptionsFilters = ({
             field='searchKeyword'
             prefix={<IconSearch />}
             placeholder={t('关键字(id或者名称)')}
+            showClear
+            pure
+            size='small'
+          />
+        </div>
+        <div className='w-full md:w-48'>
+          <Form.Select
+            field='searchAgentId'
+            placeholder={t('按代理筛选')}
+            optionList={[
+              { label: t('全部'), value: '' },
+              { label: t('无归属'), value: 0 },
+              ...agentOptions,
+            ]}
+            onChange={() => {
+              setTimeout(() => {
+                searchRedemptions();
+              }, 100);
+            }}
+            className='w-full'
             showClear
             pure
             size='small'

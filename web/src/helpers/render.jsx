@@ -81,6 +81,7 @@ import {
   Server,
   CalendarClock,
   Store,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   SiAtlassian,
@@ -140,6 +141,8 @@ export function getLucideIcon(key, selected = false) {
       return <CreditCard {...commonProps} color={iconColor} />;
     case 'agent':
       return <Store {...commonProps} color={iconColor} />;
+    case 'agentmanage':
+      return <ShieldCheck {...commonProps} color={iconColor} />;
     case 'channel':
       return <Layers {...commonProps} color={iconColor} />;
     case 'redemption':

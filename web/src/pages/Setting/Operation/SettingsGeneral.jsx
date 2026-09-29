@@ -46,6 +46,8 @@ export default function GeneralSettings(props) {
   const [showQuotaWarning, setShowQuotaWarning] = useState(false);
   const [inputs, setInputs] = useState({
     TopUpLink: '',
+    RedemptionShopUrl: '',
+    AgentApplyEnabled: false,
     'general_setting.docs_link': '',
     'general_setting.quota_display_type': 'USD',
     'general_setting.custom_currency_symbol': '¤',
@@ -71,6 +73,11 @@ export default function GeneralSettings(props) {
   function onSubmit() {
     const updateArray = compareObjects(inputs, inputsRow);
     if (!updateArray.length) return showWarning(t('你似乎并没有修改什么'));
+    // 全局商城链接：非空时必须是 http/https
+    const shopUrl = (inputs.RedemptionShopUrl || '').trim();
+    if (shopUrl && !/^https?:\/\//i.test(shopUrl)) {
+      return showError(t('兑换码商城链接必须以 http:// 或 https:// 开头'));
+    }
     const requestQueue = updateArray.map((item) => {
       let value = '';
       if (typeof inputs[item.key] === 'boolean') {
@@ -250,6 +257,23 @@ export default function GeneralSettings(props) {
                   placeholder={t('例如发卡网站的购买链接')}
                   onChange={handleFieldChange('TopUpLink')}
                   showClear
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                <Form.Input
+                  field={'RedemptionShopUrl'}
+                  label={t('兑换码商城链接（全局默认）')}
+                  initValue={''}
+                  placeholder={t('例如 https://your-shop.com')}
+                  onChange={handleFieldChange('RedemptionShopUrl')}
+                  showClear
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                <Form.Switch
+                  field={'AgentApplyEnabled'}
+                  label={t('开放代理申请')}
+                  onChange={handleFieldChange('AgentApplyEnabled')}
                 />
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>

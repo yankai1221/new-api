@@ -52,6 +52,7 @@ import SetupCheck from './components/layout/SetupCheck';
 
 const Home = lazy(() => import('./pages/Home'));
 const Agent = lazy(() => import('./pages/Agent'));
+const AgentManage = lazy(() => import('./pages/AgentManage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const About = lazy(() => import('./pages/About'));
 const UserAgreement = lazy(() => import('./pages/UserAgreement'));
@@ -285,6 +286,16 @@ function App() {
                 <Agent />
               </Suspense>
             </PrivateRoute>
+          }
+        />
+        <Route
+          path='/console/agentmanage'
+          element={
+            <AdminRoute>
+              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+                <AgentManage />
+              </Suspense>
+            </AdminRoute>
           }
         />
         <Route

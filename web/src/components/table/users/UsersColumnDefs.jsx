@@ -209,6 +209,7 @@ const renderOperations = (
     showResetPasskeyModal,
     showResetTwoFAModal,
     showUserSubscriptionsModal,
+    reassignAgent,
     t,
   },
 ) => {
@@ -221,6 +222,11 @@ const renderOperations = (
       node: 'item',
       name: t('订阅管理'),
       onClick: () => showUserSubscriptionsModal(record),
+    },
+    {
+      node: 'item',
+      name: t('修改归属代理'),
+      onClick: () => reassignAgent && reassignAgent(record),
     },
     {
       node: 'divider',
@@ -309,6 +315,7 @@ export const getUsersColumns = ({
   showResetPasskeyModal,
   showResetTwoFAModal,
   showUserSubscriptionsModal,
+  reassignAgent,
 }) => {
   return [
     {
@@ -351,6 +358,18 @@ export const getUsersColumns = ({
       render: (text, record, index) => renderInviteInfo(text, record, t),
     },
     {
+      title: t('归属代理'),
+      dataIndex: 'agent_username',
+      render: (text, record) =>
+        record.agent_id && text ? (
+          <Tag color='violet' shape='circle'>
+            {text}
+          </Tag>
+        ) : (
+          '-'
+        ),
+    },
+    {
       title: '',
       dataIndex: 'operate',
       fixed: 'right',
@@ -366,6 +385,7 @@ export const getUsersColumns = ({
           showResetPasskeyModal,
           showResetTwoFAModal,
           showUserSubscriptionsModal,
+          reassignAgent,
           t,
         }),
     },
