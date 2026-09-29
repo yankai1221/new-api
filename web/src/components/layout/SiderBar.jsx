@@ -49,6 +49,7 @@ const routerMap = {
   deployment: '/console/deployment',
   playground: '/console/playground',
   personal: '/console/personal',
+  agent: '/console/agent',
 };
 
 const SiderBar = ({ onNavigate = () => {} }) => {
@@ -128,6 +129,11 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         text: t('钱包管理'),
         itemKey: 'topup',
         to: '/topup',
+      },
+      {
+        text: t('代理中心'),
+        itemKey: 'agent',
+        to: '/agent',
       },
       {
         text: t('个人设置'),

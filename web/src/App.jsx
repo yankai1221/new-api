@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { lazy, Suspense, useContext, useMemo } from 'react';
+import React, { lazy, Suspense, useContext, useEffect, useMemo } from 'react';
 import { Route, Routes, useLocation, useParams } from 'react-router-dom';
 import Loading from './components/common/ui/Loading';
 import User from './pages/User';
@@ -51,6 +51,7 @@ import Setup from './pages/Setup';
 import SetupCheck from './components/layout/SetupCheck';
 
 const Home = lazy(() => import('./pages/Home'));
+const Agent = lazy(() => import('./pages/Agent'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const About = lazy(() => import('./pages/About'));
 const UserAgreement = lazy(() => import('./pages/UserAgreement'));
@@ -64,6 +65,15 @@ function DynamicOAuth2Callback() {
 function App() {
   const location = useLocation();
   const [statusState] = useContext(StatusContext);
+
+  // 应用入口统一捕获代理推广码：任意页面带 ?agent= 即存入 localStorage（新的覆盖旧的），
+  // 参考现有 aff 的做法，保证用户先逛站再注册也不丢归属。
+  useEffect(() => {
+    const agentCode = new URLSearchParams(location.search).get('agent');
+    if (agentCode) {
+      localStorage.setItem('agent', agentCode);
+    }
+  }, [location.search]);
 
   // 获取模型广场权限配置
   const pricingRequireAuth = useMemo(() => {
@@ -263,6 +273,16 @@ function App() {
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
                 <PersonalSetting />
+              </Suspense>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/console/agent'
+          element={
+            <PrivateRoute>
+              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+                <Agent />
               </Suspense>
             </PrivateRoute>
           }

@@ -54,7 +54,10 @@ import SubscriptionPlansCard from './SubscriptionPlansCard';
 
 const { Text } = Typography;
 
-const REDEMPTION_SHOP_URL = 'https://pay.ldxp.cn/shop/Z7VYZN0E';
+const openShop = (url) => {
+  if (!url) return;
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
 
 const RechargeCard = ({
   t,
@@ -86,6 +89,7 @@ const RechargeCard = ({
   isSubmitting,
   topUpLink,
   openTopUpLink,
+  shopUrl,
   userState,
   renderQuota,
   statusLoading,
@@ -604,14 +608,14 @@ const RechargeCard = ({
             showClear
             style={{ width: '100%' }}
             extraText={
-              topUpLink && (
+              shopUrl && (
                 <Text type='tertiary'>
                   {t('在找兑换码？')}
                   <Text
                     type='secondary'
                     underline
                     className='cursor-pointer'
-                    onClick={openTopUpLink}
+                    onClick={() => openShop(shopUrl)}
                   >
                     {t('购买兑换码')}
                   </Text>
@@ -669,21 +673,26 @@ const RechargeCard = ({
               </Text>
             </div>
           </div>
-          <Button
-            theme='solid'
-            size='large'
-            icon={<ExternalLink size={16} />}
-            onClick={() =>
-              window.open(REDEMPTION_SHOP_URL, '_blank', 'noopener,noreferrer')
-            }
-            className='!rounded-lg shrink-0 font-semibold'
-            style={{
-              background: 'white',
-              color: '#7c3aed',
-            }}
+          <Tooltip
+            content={t('管理员尚未配置商城链接')}
+            trigger={shopUrl ? 'custom' : 'hover'}
+            visible={shopUrl ? false : undefined}
           >
-            {t('前往购买')}
-          </Button>
+            <Button
+              theme='solid'
+              size='large'
+              icon={<ExternalLink size={16} />}
+              disabled={!shopUrl}
+              onClick={() => openShop(shopUrl)}
+              className='!rounded-lg shrink-0 font-semibold'
+              style={{
+                background: 'white',
+                color: '#7c3aed',
+              }}
+            >
+              {t('前往购买')}
+            </Button>
+          </Tooltip>
         </div>
       </Card>
     </Space>

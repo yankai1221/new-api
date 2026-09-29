@@ -235,12 +235,16 @@ const RegisterForm = () => {
           affCode = localStorage.getItem('aff');
         }
         inputs.aff_code = affCode;
+        // 代理推广码：随注册一并提交
+        inputs.agent_code = localStorage.getItem('agent') || '';
         const res = await API.post(
           `/api/user/register?turnstile=${turnstileToken}`,
           inputs,
         );
         const { success, message } = res.data;
         if (success) {
+          // 注册成功后清除代理推广码，避免影响后续注册
+          localStorage.removeItem('agent');
           navigate('/login');
           showSuccess('注册成功！');
         } else {

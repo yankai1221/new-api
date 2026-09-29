@@ -974,6 +974,11 @@ const TopUp = () => {
           isSubmitting={isSubmitting}
           topUpLink={topUpLink}
           openTopUpLink={openTopUpLink}
+          shopUrl={
+            userState?.user?.shop_url ||
+            statusState?.status?.redemption_shop_url ||
+            ''
+          }
           userState={userState}
           renderQuota={renderQuota}
           statusLoading={statusLoading}
