@@ -4,6 +4,7 @@ import (
 	crand "crypto/rand"
 	"errors"
 	"math/big"
+	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 
@@ -331,6 +332,35 @@ func AdminCreateOrApproveAgent(userId int, adminRemark string) (*Agent, error) {
 	return GetAgentById(agent.Id)
 }
 
+// UpdateAgentShopUrlByUserId 代理本人修改自己的 shop_url（允许清空）
+func UpdateAgentShopUrlByUserId(userId int, shopUrl string) error {
+	return DB.Model(&Agent{}).Where("user_id = ?", userId).Updates(map[string]interface{}{
+		"shop_url":     shopUrl,
+		"updated_time": common.GetTimestamp(),
+	}).Error
+}
+
+// ReassignUserAgent 管理员修改用户归属代理。agentUserId=0 表示取消归属；
+// 非 0 时目标必须是已通过代理且不能是用户本人。使用显式 Update 以允许写 0。
+func ReassignUserAgent(userId, agentUserId int) error {
+	if userId == 0 {
+		return errors.New("user id 为空")
+	}
+	if agentUserId != 0 {
+		if agentUserId == userId {
+			return errors.New("不能把用户归属给其本人")
+		}
+		agent, err := GetAgentByUserId(agentUserId)
+		if err != nil {
+			return err
+		}
+		if agent == nil || agent.Status != AgentStatusApproved {
+			return errors.New("目标代理不存在或未通过审核")
+		}
+	}
+	return DB.Model(&User{}).Where("id = ?", userId).Update("agent_id", agentUserId).Error
+}
+
 // UpdateAgentByAdmin 管理员修改 shop_url / admin_remark
 func UpdateAgentByAdmin(id int, shopUrl, adminRemark string) (*Agent, error) {
 	agent, err := GetAgentById(id)
@@ -346,6 +376,69 @@ func UpdateAgentByAdmin(id int, shopUrl, adminRemark string) (*Agent, error) {
 		return nil, err
 	}
 	return GetAgentById(agent.Id)
+}
+
+// ValidateShopUrl 校验商城链接：允许为空(表示清空)；非空必须 http/https 开头且长度<=512
+func ValidateShopUrl(u string) error {
+	if u == "" {
+		return nil
+	}
+	if len(u) > 512 {
+		return errors.New("商城链接长度不能超过 512")
+	}
+	if !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
+		return errors.New("商城链接必须以 http:// 或 https:// 开头")
+	}
+	return nil
+}
+
+// GetAgentStatusByUserId 返回用户自己的代理状态，非代理为 0
+func GetAgentStatusByUserId(userId int) int {
+	agent, err := GetAgentByUserId(userId)
+	if err != nil || agent == nil {
+		return 0
+	}
+	return agent.Status
+}
+
+// ResolveShopUrlForUser 依据归属代理解析最终商城链接（后端解析，前端直接使用）。
+// 规则：归属代理已通过且填了 shop_url -> 用代理店铺；否则用全局 RedemptionShopUrl；
+// 全局为空 -> 回退到 TopUpLink。
+func ResolveShopUrlForUser(agentId int) string {
+	if agentId != 0 {
+		agent, err := GetAgentByUserId(agentId)
+		if err == nil && agent != nil && agent.Status == AgentStatusApproved && agent.ShopUrl != "" {
+			return agent.ShopUrl
+		}
+	}
+	if common.RedemptionShopUrl != "" {
+		return common.RedemptionShopUrl
+	}
+	return common.TopUpLink
+}
+
+// MaskEmail 邮箱打码，例如 abcd@qq.com -> ab***@qq.com
+func MaskEmail(email string) string {
+	if email == "" {
+		return ""
+	}
+	at := strings.Index(email, "@")
+	if at < 0 {
+		return maskLocalPart(email)
+	}
+	return maskLocalPart(email[:at]) + email[at:]
+}
+
+func maskLocalPart(s string) string {
+	r := []rune(s)
+	switch {
+	case len(r) == 0:
+		return ""
+	case len(r) <= 2:
+		return string(r[:1]) + "***"
+	default:
+		return string(r[:2]) + "***"
+	}
 }
 
 // SearchAgents 代理列表，可按状态筛选、按用户名搜索

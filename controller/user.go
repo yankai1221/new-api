@@ -237,14 +237,20 @@ func Register(c *gin.Context) {
 
 func GetAllUsers(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
-	users, total, err := model.GetAllUsers(pageInfo)
+	agentId := parseAgentIdFilter(c)
+	users, total, err := model.GetAllUsers(pageInfo, agentId)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	items, err := attachAgentUsernameToUsers(users)
 	if err != nil {
 		common.ApiError(c, err)
 		return
 	}
 
 	pageInfo.SetTotal(int(total))
-	pageInfo.SetItems(users)
+	pageInfo.SetItems(items)
 
 	common.ApiSuccess(c, pageInfo)
 	return
@@ -253,15 +259,21 @@ func GetAllUsers(c *gin.Context) {
 func SearchUsers(c *gin.Context) {
 	keyword := c.Query("keyword")
 	group := c.Query("group")
+	agentId := parseAgentIdFilter(c)
 	pageInfo := common.GetPageQuery(c)
-	users, total, err := model.SearchUsers(keyword, group, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	users, total, err := model.SearchUsers(keyword, group, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), agentId)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	items, err := attachAgentUsernameToUsers(users)
 	if err != nil {
 		common.ApiError(c, err)
 		return
 	}
 
 	pageInfo.SetTotal(int(total))
-	pageInfo.SetItems(users)
+	pageInfo.SetItems(items)
 	common.ApiSuccess(c, pageInfo)
 	return
 }
@@ -418,6 +430,10 @@ func GetSelf(c *gin.Context) {
 		"stripe_customer":   user.StripeCustomer,
 		"sidebar_modules":   userSetting.SidebarModules, // 正确提取sidebar_modules字段
 		"permissions":       permissions,                // 新增权限字段
+		// 代理功能：后端解析的最终商城链接 + 用户自己的代理状态(非代理为0)
+		"shop_url":     model.ResolveShopUrlForUser(user.AgentId),
+		"agent_status": model.GetAgentStatusByUserId(user.Id),
+		"agent_id":     user.AgentId,
 	}
 
 	c.JSON(http.StatusOK, gin.H{

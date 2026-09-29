@@ -14,27 +14,39 @@ import (
 
 func GetAllRedemptions(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
-	redemptions, total, err := model.GetAllRedemptions(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	agentId := parseAgentIdFilter(c)
+	redemptions, total, err := model.GetAllRedemptions(pageInfo.GetStartIdx(), pageInfo.GetPageSize(), agentId)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	items, err := attachAgentUsernameToRedemptions(redemptions)
 	if err != nil {
 		common.ApiError(c, err)
 		return
 	}
 	pageInfo.SetTotal(int(total))
-	pageInfo.SetItems(redemptions)
+	pageInfo.SetItems(items)
 	common.ApiSuccess(c, pageInfo)
 	return
 }
 
 func SearchRedemptions(c *gin.Context) {
 	keyword := c.Query("keyword")
+	agentId := parseAgentIdFilter(c)
 	pageInfo := common.GetPageQuery(c)
-	redemptions, total, err := model.SearchRedemptions(keyword, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	redemptions, total, err := model.SearchRedemptions(keyword, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), agentId)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	items, err := attachAgentUsernameToRedemptions(redemptions)
 	if err != nil {
 		common.ApiError(c, err)
 		return
 	}
 	pageInfo.SetTotal(int(total))
-	pageInfo.SetItems(redemptions)
+	pageInfo.SetItems(items)
 	common.ApiSuccess(c, pageInfo)
 	return
 }

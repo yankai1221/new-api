@@ -194,7 +194,8 @@ func GetMaxUserId() int {
 	return user.Id
 }
 
-func GetAllUsers(pageInfo *common.PageInfo) (users []*User, total int64, err error) {
+// GetAllUsers 用户列表。agentId>=0 时按归属代理过滤(0 表示无归属)，agentId<0 表示不过滤。
+func GetAllUsers(pageInfo *common.PageInfo, agentId int) (users []*User, total int64, err error) {
 	// Start transaction
 	tx := DB.Begin()
 	if tx.Error != nil {
@@ -206,15 +207,22 @@ func GetAllUsers(pageInfo *common.PageInfo) (users []*User, total int64, err err
 		}
 	}()
 
+	countQuery := tx.Unscoped().Model(&User{})
+	findQuery := tx.Unscoped().Model(&User{})
+	if agentId >= 0 {
+		countQuery = countQuery.Where("agent_id = ?", agentId)
+		findQuery = findQuery.Where("agent_id = ?", agentId)
+	}
+
 	// Get total count within transaction
-	err = tx.Unscoped().Model(&User{}).Count(&total).Error
+	err = countQuery.Count(&total).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err
 	}
 
 	// Get paginated users within same transaction
-	err = tx.Unscoped().Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Omit("password").Find(&users).Error
+	err = findQuery.Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Omit("password").Find(&users).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err
@@ -228,7 +236,8 @@ func GetAllUsers(pageInfo *common.PageInfo) (users []*User, total int64, err err
 	return users, total, nil
 }
 
-func SearchUsers(keyword string, group string, startIdx int, num int) ([]*User, int64, error) {
+// SearchUsers 用户搜索。agentId>=0 时按归属代理过滤，agentId<0 表示不过滤。
+func SearchUsers(keyword string, group string, startIdx int, num int, agentId int) ([]*User, int64, error) {
 	var users []*User
 	var total int64
 	var err error
@@ -246,6 +255,9 @@ func SearchUsers(keyword string, group string, startIdx int, num int) ([]*User, 
 
 	// 构建基础查询
 	query := tx.Unscoped().Model(&User{})
+	if agentId >= 0 {
+		query = query.Where("agent_id = ?", agentId)
+	}
 
 	// 构建搜索条件
 	likeCondition := "username LIKE ? OR email LIKE ? OR display_name LIKE ?"
@@ -293,6 +305,50 @@ func SearchUsers(keyword string, group string, startIdx int, num int) ([]*User, 
 	}
 
 	return users, total, nil
+}
+
+// GetUsernamesByIds 批量按 id 获取用户名，避免 N+1
+func GetUsernamesByIds(ids []int) (map[int]string, error) {
+	result := make(map[int]string, len(ids))
+	if len(ids) == 0 {
+		return result, nil
+	}
+	type row struct {
+		Id       int
+		Username string
+	}
+	var rows []row
+	if err := DB.Model(&User{}).Select("id, username").Where("id IN ?", ids).Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		result[r.Id] = r.Username
+	}
+	return result, nil
+}
+
+// UserBrief 用户摘要，用于批量展示
+type UserBrief struct {
+	Id          int    `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+	Email       string `json:"email"`
+}
+
+// GetUserBriefsByIds 批量按 id 获取用户摘要，避免 N+1
+func GetUserBriefsByIds(ids []int) (map[int]*UserBrief, error) {
+	result := make(map[int]*UserBrief, len(ids))
+	if len(ids) == 0 {
+		return result, nil
+	}
+	var rows []UserBrief
+	if err := DB.Model(&User{}).Select("id, username, display_name, email").Where("id IN ?", ids).Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	for i := range rows {
+		result[rows[i].Id] = &rows[i]
+	}
+	return result, nil
 }
 
 func GetUserById(id int, selectAll bool) (*User, error) {

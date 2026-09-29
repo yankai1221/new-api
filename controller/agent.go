@@ -10,24 +10,102 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// agentWithUser 管理员列表返回结构：代理记录 + 归属用户名（便于前端展示）
+// agentWithUser 管理员列表返回结构：代理记录 + 归属用户名 + 统计（批量聚合，避免 N+1）
 type agentWithUser struct {
 	*model.Agent
-	Username    string `json:"username"`
-	DisplayName string `json:"display_name"`
+	Username    string            `json:"username"`
+	DisplayName string            `json:"display_name"`
+	Stats       *model.AgentStats `json:"stats"`
 }
 
-func enrichAgentsWithUser(agents []*model.Agent) []*agentWithUser {
+func enrichAgentsWithUser(agents []*model.Agent) ([]*agentWithUser, error) {
+	userIds := make([]int, 0, len(agents))
+	for _, a := range agents {
+		userIds = append(userIds, a.UserId)
+	}
+	briefs, err := model.GetUserBriefsByIds(userIds)
+	if err != nil {
+		return nil, err
+	}
+	statsMap, err := model.GetAgentStatsBatch(userIds)
+	if err != nil {
+		return nil, err
+	}
 	result := make([]*agentWithUser, 0, len(agents))
 	for _, a := range agents {
-		item := &agentWithUser{Agent: a}
-		if u, err := model.GetUserById(a.UserId, false); err == nil && u != nil {
-			item.Username = u.Username
-			item.DisplayName = u.DisplayName
+		item := &agentWithUser{Agent: a, Stats: statsMap[a.UserId]}
+		if b, ok := briefs[a.UserId]; ok {
+			item.Username = b.Username
+			item.DisplayName = b.DisplayName
 		}
 		result = append(result, item)
 	}
-	return result
+	return result, nil
+}
+
+// parseAgentIdFilter 解析 ?agent_id= 过滤参数：缺省返回 -1(不过滤)，0 表示筛选未归属
+func parseAgentIdFilter(c *gin.Context) int {
+	raw := c.Query("agent_id")
+	if raw == "" {
+		return -1
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil || v < 0 {
+		return -1
+	}
+	return v
+}
+
+type userWithAgent struct {
+	*model.User
+	AgentUsername string `json:"agent_username"`
+}
+
+// attachAgentUsernameToUsers 批量补充归属代理用户名（避免 N+1）
+func attachAgentUsernameToUsers(users []*model.User) ([]*userWithAgent, error) {
+	ids := make([]int, 0)
+	seen := make(map[int]bool)
+	for _, u := range users {
+		if u.AgentId != 0 && !seen[u.AgentId] {
+			seen[u.AgentId] = true
+			ids = append(ids, u.AgentId)
+		}
+	}
+	m, err := model.GetUsernamesByIds(ids)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*userWithAgent, 0, len(users))
+	for _, u := range users {
+		out = append(out, &userWithAgent{User: u, AgentUsername: m[u.AgentId]})
+	}
+	return out, nil
+}
+
+type redemptionWithAgent struct {
+	*model.Redemption
+	AgentUsername string `json:"agent_username"`
+}
+
+// attachAgentUsernameToRedemptions 批量补充兑换码归属代理用户名（避免 N+1）
+func attachAgentUsernameToRedemptions(reds []*model.Redemption) ([]*redemptionWithAgent, error) {
+	ids := make([]int, 0)
+	seen := make(map[int]bool)
+	for _, r := range reds {
+		if r.AgentId != 0 && !seen[r.AgentId] {
+			seen[r.AgentId] = true
+			ids = append(ids, r.AgentId)
+		}
+	}
+	m, err := model.GetUsernamesByIds(ids)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*redemptionWithAgent, 0, len(reds))
+	for _, r := range reds {
+		out = append(out, &redemptionWithAgent{Redemption: r, AgentUsername: m[r.AgentId]})
+	}
+	return out, nil
 }
 
 // ==================== 用户侧（UserAuth） ====================
@@ -97,8 +175,13 @@ func AdminListAgents(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	items, err := enrichAgentsWithUser(agents)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	pageInfo.SetTotal(int(total))
-	pageInfo.SetItems(enrichAgentsWithUser(agents))
+	pageInfo.SetItems(items)
 	common.ApiSuccess(c, pageInfo)
 }
 

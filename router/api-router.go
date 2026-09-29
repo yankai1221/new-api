@@ -145,16 +145,40 @@ func SetApiRouter(router *gin.Engine) {
 			agentRoute.POST("/apply", controller.ApplyForAgent)
 		}
 
-		// 代理商功能 —— 管理员侧（审核）。/api/admin 分组此前不存在，无路径冲突。
+		// 代理商功能 —— 代理侧（AgentAuth：UserAuth 之后校验 status=2）
+		agentSelfRoute := apiRouter.Group("/agent")
+		agentSelfRoute.Use(middleware.UserAuth(), middleware.AgentAuth())
+		{
+			agentSelfRoute.GET("/self", controller.GetAgentSelf)
+			agentSelfRoute.PUT("/self", controller.UpdateAgentSelf)
+			agentSelfRoute.GET("/users", controller.GetAgentUsers)
+			agentSelfRoute.GET("/users/:id/redemptions", controller.GetAgentUserRedemptions)
+			agentSelfRoute.GET("/redemptions", controller.GetAgentRedemptions)
+			agentSelfRoute.GET("/redemptions/export", controller.ExportAgentRedemptions)
+		}
+
+		// 代理商功能 —— 管理员侧。/api/admin 分组此前不存在，无路径冲突。
 		adminAgentRoute := apiRouter.Group("/admin/agents")
 		adminAgentRoute.Use(middleware.AdminAuth())
 		{
 			adminAgentRoute.GET("", controller.AdminListAgents)
 			adminAgentRoute.POST("/create", controller.AdminCreateAgent)
+			adminAgentRoute.PUT("/:id", controller.AdminUpdateAgent)
 			adminAgentRoute.POST("/:id/approve", controller.AdminApproveAgent)
 			adminAgentRoute.POST("/:id/reject", controller.AdminRejectAgent)
 			adminAgentRoute.POST("/:id/disable", controller.AdminDisableAgent)
 			adminAgentRoute.POST("/:id/enable", controller.AdminEnableAgent)
+			adminAgentRoute.GET("/:id/users", controller.AdminGetAgentUsers)
+			adminAgentRoute.POST("/:id/allocate", controller.AdminAllocateCodes)
+			adminAgentRoute.POST("/:id/revoke", controller.AdminRevokeCodes)
+			adminAgentRoute.GET("/:id/allocation_logs", controller.AdminGetAgentAllocationLogs)
+		}
+
+		// 代理商功能 —— 管理员修改用户归属代理
+		adminUserAgentRoute := apiRouter.Group("/admin/users")
+		adminUserAgentRoute.Use(middleware.AdminAuth())
+		{
+			adminUserAgentRoute.PUT("/:id/agent", controller.AdminReassignUserAgent)
 		}
 
 		// Subscription billing (plans, purchase, admin management)
