@@ -17,6 +17,12 @@ var Footer = ""
 var Logo = ""
 var TopUpLink = ""
 
+// RedemptionShopUrl 全局兑换码商城链接（钱包页统一使用），默认沿用原前端硬编码地址
+var RedemptionShopUrl = "https://pay.ldxp.cn/shop/Z7VYZN0E"
+
+// AgentApplyEnabled 是否开放代理申请
+var AgentApplyEnabled = true
+
 // var ChatLink = ""
 // var ChatLink2 = ""
 var QuotaPerUnit = 500 * 1000.0 // $0.002 / 1K tokens

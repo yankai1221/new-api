@@ -27,6 +27,11 @@ func GenerateOAuthCode(c *gin.Context) {
 	if affCode != "" {
 		session.Set("aff", affCode)
 	}
+	// 代理推广码：与 aff 独立，仅在新建用户时生效
+	agentCode := c.Query("agent")
+	if agentCode != "" {
+		session.Set("agent", agentCode)
+	}
 	session.Set("oauth_state", state)
 	err := session.Save()
 	if err != nil {
@@ -199,6 +204,27 @@ func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *oauth.OAuthUser, session sessions.Session) (*model.User, error) {
 	user := &model.User{}
 
+	// 消费注册归属参数（邀请码 aff / 代理码 agent）。
+	// 这些参数只在「新建用户」时生效；在函数开头一次性读取并立即从 session 清除，
+	// 保证无论后续走登录（已有用户）还是新建、成功还是失败路径，都不会残留影响后续注册。
+	inviterId := 0
+	if affCode := session.Get("aff"); affCode != nil {
+		if code, ok := affCode.(string); ok {
+			inviterId, _ = model.GetUserIdByAffCode(code)
+		}
+	}
+	agentId := 0
+	if agentCode := session.Get("agent"); agentCode != nil {
+		if code, ok := agentCode.(string); ok {
+			agentId = model.ResolveAgentIdByCode(code, 0)
+		}
+	}
+	if session.Get("aff") != nil || session.Get("agent") != nil {
+		session.Delete("aff")
+		session.Delete("agent")
+		_ = session.Save()
+	}
+
 	// Check if user already exists with new ID
 	if provider.IsUserIDTaken(oauthUser.ProviderUserID) {
 		err := provider.FillUserByProviderID(user, oauthUser.ProviderUserID)
@@ -261,13 +287,8 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	}
 	user.Role = common.RoleCommonUser
 	user.Status = common.UserStatusEnabled
-
-	// Handle affiliate code
-	affCode := session.Get("aff")
-	inviterId := 0
-	if affCode != nil {
-		inviterId, _ = model.GetUserIdByAffCode(affCode.(string))
-	}
+	// 代理归属（inviterId / agentId 已在函数开头解析并清理 session）
+	user.AgentId = agentId
 
 	// Use transaction to ensure user creation and OAuth binding are atomic
 	if genericProvider, ok := provider.(*oauth.GenericOAuthProvider); ok {

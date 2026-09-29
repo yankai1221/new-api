@@ -50,6 +50,9 @@ type User struct {
 	Setting          string         `json:"setting" gorm:"type:text;column:setting"`
 	Remark           string         `json:"remark,omitempty" gorm:"type:varchar(255)" validate:"max=255"`
 	StripeCustomer   string         `json:"stripe_customer" gorm:"type:varchar(64);column:stripe_customer;index"`
+	AgentId          int            `json:"agent_id" gorm:"type:int;default:0;index"` // 归属代理的 user_id，0 表示无归属
+	CreatedTime      int64          `json:"created_time" gorm:"bigint;default:0"`     // 注册时间（Unix 秒），老用户为 0
+	AgentCode        string         `json:"agent_code" gorm:"-:all"`                  // 注册时携带的代理推广码，不入库
 }
 
 func (user *User) ToBaseUser() *UserBase {
@@ -122,28 +125,31 @@ func generateDefaultSidebarConfigForRole(userRole int) string {
 		"enabled":  true,
 		"topup":    true,
 		"personal": true,
+		"agent":    true, // 代理中心，所有登录用户可见
 	}
 
 	// 管理员区域 - 根据角色决定
 	if userRole == common.RoleAdminUser {
 		// 管理员可以访问管理员区域，但不能访问系统设置
 		defaultConfig["admin"] = map[string]interface{}{
-			"enabled":    true,
-			"channel":    true,
-			"models":     true,
-			"redemption": true,
-			"user":       true,
-			"setting":    false, // 管理员不能访问系统设置
+			"enabled":     true,
+			"channel":     true,
+			"models":      true,
+			"redemption":  true,
+			"user":        true,
+			"agentmanage": true,  // 代理管理
+			"setting":     false, // 管理员不能访问系统设置
 		}
 	} else if userRole == common.RoleRootUser {
 		// 超级管理员可以访问所有功能
 		defaultConfig["admin"] = map[string]interface{}{
-			"enabled":    true,
-			"channel":    true,
-			"models":     true,
-			"redemption": true,
-			"user":       true,
-			"setting":    true,
+			"enabled":     true,
+			"channel":     true,
+			"models":      true,
+			"redemption":  true,
+			"user":        true,
+			"agentmanage": true, // 代理管理
+			"setting":     true,
 		}
 	}
 	// 普通用户不包含admin区域
@@ -387,6 +393,9 @@ func (user *User) Insert(inviterId int) error {
 	user.Quota = common.QuotaForNewUser
 	//user.SetAccessToken(common.GetUUID())
 	user.AffCode = common.GetRandomString(4)
+	if user.CreatedTime == 0 {
+		user.CreatedTime = common.GetTimestamp()
+	}
 
 	// 初始化用户设置，包括默认的边栏配置
 	if user.Setting == "" {
@@ -445,6 +454,9 @@ func (user *User) InsertWithTx(tx *gorm.DB, inviterId int) error {
 	}
 	user.Quota = common.QuotaForNewUser
 	user.AffCode = common.GetRandomString(4)
+	if user.CreatedTime == 0 {
+		user.CreatedTime = common.GetTimestamp()
+	}
 
 	// 初始化用户设置
 	if user.Setting == "" {

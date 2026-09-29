@@ -137,6 +137,26 @@ func SetApiRouter(router *gin.Engine) {
 			}
 		}
 
+		// 代理商功能 —— 用户侧（申请）
+		agentRoute := apiRouter.Group("/agent")
+		agentRoute.Use(middleware.UserAuth())
+		{
+			agentRoute.GET("/apply", controller.GetAgentApply)
+			agentRoute.POST("/apply", controller.ApplyForAgent)
+		}
+
+		// 代理商功能 —— 管理员侧（审核）。/api/admin 分组此前不存在，无路径冲突。
+		adminAgentRoute := apiRouter.Group("/admin/agents")
+		adminAgentRoute.Use(middleware.AdminAuth())
+		{
+			adminAgentRoute.GET("", controller.AdminListAgents)
+			adminAgentRoute.POST("/create", controller.AdminCreateAgent)
+			adminAgentRoute.POST("/:id/approve", controller.AdminApproveAgent)
+			adminAgentRoute.POST("/:id/reject", controller.AdminRejectAgent)
+			adminAgentRoute.POST("/:id/disable", controller.AdminDisableAgent)
+			adminAgentRoute.POST("/:id/enable", controller.AdminEnableAgent)
+		}
+
 		// Subscription billing (plans, purchase, admin management)
 		subscriptionRoute := apiRouter.Group("/subscription")
 		subscriptionRoute.Use(middleware.UserAuth())

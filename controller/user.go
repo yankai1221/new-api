@@ -174,11 +174,15 @@ func Register(c *gin.Context) {
 	}
 	affCode := user.AffCode // this code is the inviter's code, not the user's own code
 	inviterId, _ := model.GetUserIdByAffCode(affCode)
+	// 代理归属：解析注册请求携带的代理推广码（无效/非「已通过」时归属为 0）
+	agentId := model.ResolveAgentIdByCode(strings.TrimSpace(user.AgentCode), 0)
 	cleanUser := model.User{
 		Username:    user.Username,
 		Password:    user.Password,
 		DisplayName: user.Username,
 		InviterId:   inviterId,
+		AgentId:     agentId,
+		CreatedTime: common.GetTimestamp(),
 		Role:        common.RoleCommonUser, // 明确设置角色为普通用户
 	}
 	if common.EmailVerificationEnabled {
