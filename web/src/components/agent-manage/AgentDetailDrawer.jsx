@@ -36,6 +36,7 @@ import {
   Tabs,
   TabPane,
   Tag,
+  TextArea,
   Typography,
 } from '@douyinfe/semi-ui';
 import { Copy, Download } from 'lucide-react';
@@ -344,7 +345,7 @@ const AgentDetailDrawer = ({
       title: t('生成成功，共 {{count}} 个', { count: keys.length }),
       content: (
         <div>
-          <Input.TextArea
+          <TextArea
             value={text}
             readOnly
             autosize={{ minRows: 4, maxRows: 12 }}
@@ -510,7 +511,7 @@ const AgentDetailDrawer = ({
           className='!mb-3'
         />
         <FieldLabel>{t('管理员备注')}</FieldLabel>
-        <Input.TextArea
+        <TextArea
           value={adminRemark}
           onChange={setAdminRemark}
           autosize={{ minRows: 2, maxRows: 5 }}

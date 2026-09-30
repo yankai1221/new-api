@@ -32,6 +32,7 @@ import {
   Tabs,
   TabPane,
   Tag,
+  TextArea,
   Typography,
 } from '@douyinfe/semi-ui';
 import { ShieldCheck, UserPlus } from 'lucide-react';
@@ -164,7 +165,7 @@ const AgentManage = () => {
       title: t('拒绝申请') + ' - ' + rec.username,
       content: (
         <div className='mt-2'>
-          <Input.TextArea
+          <TextArea
             placeholder={t('请填写拒绝理由（申请人可见）')}
             onChange={(v) => (reason = v)}
             autosize={{ minRows: 2, maxRows: 4 }}
