@@ -81,6 +81,8 @@ export const mergeAdminConfig = (savedConfig) => {
 export const useSidebar = () => {
   const [statusState] = useContext(StatusContext);
   const [userConfig, setUserConfig] = useState(null);
+  // 当前用户的代理状态（0/无=从未申请，>0=已有代理记录），用于侧边栏「代理中心」菜单的显示判断
+  const [agentStatus, setAgentStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const instanceIdRef = useRef(null);
   const hasLoadedOnceRef = useRef(false);
@@ -116,6 +118,9 @@ export const useSidebar = () => {
       }
 
       const res = await API.get('/api/user/self');
+      if (res.data.success) {
+        setAgentStatus(res.data.data.agent_status ?? 0);
+      }
       if (res.data.success && res.data.data.sidebar_modules) {
         let config;
         // 检查sidebar_modules是字符串还是对象
@@ -294,6 +299,7 @@ export const useSidebar = () => {
     loading,
     adminConfig,
     userConfig,
+    agentStatus,
     finalConfig,
     isModuleVisible,
     hasSectionVisibleModules,

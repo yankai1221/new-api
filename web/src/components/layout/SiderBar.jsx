@@ -17,13 +17,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getLucideIcon } from '../../helpers/render';
 import { ChevronLeft } from 'lucide-react';
 import { useSidebarCollapsed } from '../../hooks/common/useSidebarCollapsed';
 import { useSidebar } from '../../hooks/common/useSidebar';
+import { StatusContext } from '../../context/Status';
 import { useMinimumLoadingTime } from '../../hooks/common/useMinimumLoadingTime';
 import { isAdmin, isRoot, showError } from '../../helpers';
 import SkeletonWrapper from './components/SkeletonWrapper';
@@ -59,8 +60,18 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const {
     isModuleVisible,
     hasSectionVisibleModules,
+    agentStatus,
     loading: sidebarLoading,
   } = useSidebar();
+  const [statusState] = useContext(StatusContext);
+
+  // 「代理中心」菜单显示规则：
+  // - 开放代理申请时：维持原有行为（普通用户可见）。
+  // - 关闭代理申请时：仅「从未申请过」(agentStatus 为 0/空) 的普通用户隐藏；
+  //   已有代理记录（待审核/已通过/已拒绝/已禁用，agentStatus>0）的用户菜单照常显示。
+  const agentApplyEnabled = statusState?.status?.agent_apply_enabled !== false;
+  const hasAgentRecord = Number(agentStatus) > 0;
+  const showAgentMenu = agentApplyEnabled || hasAgentRecord;
 
   const showSkeleton = useMinimumLoadingTime(sidebarLoading, 200);
 
@@ -147,12 +158,14 @@ const SiderBar = ({ onNavigate = () => {} }) => {
 
     // 根据配置过滤项目
     const filteredItems = items.filter((item) => {
+      // 关闭代理申请且用户从未申请过时，隐藏「代理中心」菜单
+      if (item.itemKey === 'agent' && !showAgentMenu) return false;
       const configVisible = isModuleVisible('personal', item.itemKey);
       return configVisible;
     });
 
     return filteredItems;
-  }, [isAdmin(), t, isModuleVisible]);
+  }, [isAdmin(), t, isModuleVisible, showAgentMenu]);
 
   const adminItems = useMemo(() => {
     const items = [
